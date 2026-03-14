@@ -1,0 +1,45 @@
+name: WeRead Auto Read
+
+on:
+  schedule:
+    # Daily at 02:00 Beijing Time (18:00 UTC previous day)
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-read:
+    runs-on: ubuntu-latest
+    
+    # Permission to write is needed if we were to use keepalive, but we are removing it for cleanliness.
+    # If the workflow stops after 60 days, the user will receive an email to re-enable it.
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install requests urllib3
+
+      - name: Run Auto Read
+        env:
+          # Secrets
+          WXREAD_CURL_BASH: ${{ secrets.WXREAD_CURL_BASH }}
+          PUSH_PUSHPLUS_TOKEN: ${{ secrets.PUSH_PUSHPLUS_TOKEN }}
+          PUSH_WXPUSHER_TOKEN: ${{ secrets.PUSH_WXPUSHER_TOKEN }}
+          PUSH_TELEGRAM_TOKEN: ${{ secrets.PUSH_TELEGRAM_TOKEN }}
+          PUSH_TELEGRAM_CHAT_ID: ${{ secrets.PUSH_TELEGRAM_CHAT_ID }}
+          PUSH_SERVERCHAN_SENDKEY: ${{ secrets.PUSH_SERVERCHAN_SENDKEY }}
+          
+          # Variables (Config)
+          # If not set in repo variables, it defaults to 60 in main.py
+          READ_MINUTES: ${{ vars.READ_MINUTES || secrets.READ_MINUTES }}
+          
+        run: python main.py
